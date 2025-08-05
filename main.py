@@ -11,6 +11,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
 )
+from fastapi import FastAPI
 
 load_dotenv()
 
@@ -28,6 +29,9 @@ TEAM = {
 active = True
 known_tasks = set()
 known_comments = set()
+
+# FastAPI app для Render
+app = FastAPI()
 
 def get_projects():
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/projects.json"
@@ -101,7 +105,6 @@ async def check_updates(context: ContextTypes.DEFAULT_TYPE):
                             await send_message(context, message)
                             known_tasks.add(task_identifier)
 
-                # Проверка комментариев
                 comments = get_comments(project_id, todo_id)
                 for comment in comments:
                     comment_id = comment["id"]
@@ -138,19 +141,19 @@ async def daily_report(context: ContextTypes.DEFAULT_TYPE):
 
     await send_message(context, message)
 
-async def task_monitor_loop():
+async def task_monitor_loop(application):
     while True:
-        await check_updates(ContextTypes.DEFAULT_TYPE)
-        await asyncio.sleep(600)  # каждые 10 минут
+        await check_updates(application.bot)
+        await asyncio.sleep(600)
 
-async def daily_report_loop():
+async def daily_report_loop(application):
     while True:
         now = datetime.datetime.now()
         target = now.replace(hour=11, minute=0, second=0, microsecond=0)
         if now > target:
             target += datetime.timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
-        await daily_report(ContextTypes.DEFAULT_TYPE)
+        await daily_report(application.bot)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global active
@@ -182,21 +185,18 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Используй: /удалить Имя Фамилия")
 
-async def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("старт", start_command))
-    app.add_handler(CommandHandler("стоп", stop_command))
-    app.add_handler(CommandHandler("добавить", add_command))
-    app.add_handler(CommandHandler("удалить", remove_command))
-
-    await asyncio.gather(
-        app.initialize(),
-        app.start(),
-        task_monitor_loop(),
-        daily_report_loop()
-    )
-
-if __name__ == "__main__":
+@app.on_event("startup")
+async def startup_event():
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("старт", start_command))
+    application.add_handler(CommandHandler("стоп", stop_command))
+    application.add_handler(CommandHandler("добавить", add_command))
+    application.add_handler(CommandHandler("удалить", remove_command))
+
+    await application.initialize()
+    await application.start()
+
+    asyncio.create_task(task_monitor_loop(application))
+    asyncio.create_task(daily_report_loop(application))
