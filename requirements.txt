@@ -1,3 +1,5 @@
 python-dotenv
 python-telegram-bot==20.7
 requests
+uvicorn
+fastapi
