@@ -1,3 +1,3 @@
 #!/bin/bash
-echo "🚀 Запуск бота..."
-python3 bot.py
+echo "🚀 Запуск Basecamp бота..."
+python3 main.py
