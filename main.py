@@ -206,3 +206,13 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"❌ {full_name} not found.")
     else:
         await update.message.reply_text("Usage: /remove Firstname Lastname")
+
+from fastapi import Request
+from telegram import Update
+
+@app.post("/")
+async def telegram_webhook(update: Request):
+    json_data = await update.json()
+    telegram_update = Update.de_json(json_data, application.bot)
+    await application.process_update(telegram_update)
+    return {"status": "ok"}
