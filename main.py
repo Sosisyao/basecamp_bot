@@ -6,11 +6,7 @@ import requests
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    ContextTypes,
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from fastapi import FastAPI
 
 load_dotenv()
@@ -42,8 +38,7 @@ def get_projects():
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    response = requests.get(url, headers=headers)
-    return response.json()
+    return requests.get(url, headers=headers).json()
 
 def get_todolists(project_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todolists.json"
@@ -51,8 +46,7 @@ def get_todolists(project_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    response = requests.get(url, headers=headers)
-    return response.json()
+    return requests.get(url, headers=headers).json()
 
 def get_todos(project_id, todolist_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todolists/{todolist_id}/todos.json"
@@ -60,8 +54,7 @@ def get_todos(project_id, todolist_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    response = requests.get(url, headers=headers)
-    return response.json()
+    return requests.get(url, headers=headers).json()
 
 def get_comments(project_id, todo_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todos/{todo_id}/comments.json"
@@ -69,8 +62,7 @@ def get_comments(project_id, todo_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    response = requests.get(url, headers=headers)
-    return response.json()
+    return requests.get(url, headers=headers).json()
 
 async def send_message(context: ContextTypes.DEFAULT_TYPE, text):
     await context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text)
@@ -191,12 +183,7 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @app.on_event("startup")
 async def startup_event():
     logging.basicConfig(level=logging.INFO)
-
-    application = (
-        ApplicationBuilder()
-        .token(TELEGRAM_BOT_TOKEN)
-        .build()
-    )
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("старт", start_command))
     application.add_handler(CommandHandler("стоп", stop_command))
@@ -204,6 +191,5 @@ async def startup_event():
     application.add_handler(CommandHandler("удалить", remove_command))
 
     asyncio.create_task(application.run_async())
-
     asyncio.create_task(task_monitor_loop(application))
     asyncio.create_task(daily_report_loop(application))
