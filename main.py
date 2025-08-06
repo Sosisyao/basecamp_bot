@@ -27,6 +27,7 @@ known_tasks = set()
 known_comments = set()
 
 app = FastAPI()
+application = None
 
 @app.get("/")
 def read_root():
@@ -136,19 +137,19 @@ async def daily_report(context: ContextTypes.DEFAULT_TYPE):
 
     await send_message(context, message)
 
-async def task_monitor_loop(application):
+async def task_monitor_loop(context):
     while True:
-        await check_updates(application.bot)
+        await check_updates(context)
         await asyncio.sleep(600)
 
-async def daily_report_loop(application):
+async def daily_report_loop(context):
     while True:
         now = datetime.datetime.now()
         target = now.replace(hour=11, minute=0, second=0, microsecond=0)
         if now > target:
             target += datetime.timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
-        await daily_report(application.bot)
+        await daily_report(context)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global active
@@ -182,6 +183,7 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @app.on_event("startup")
 async def startup_event():
+    global application
     logging.basicConfig(level=logging.INFO)
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
@@ -190,6 +192,13 @@ async def startup_event():
     application.add_handler(CommandHandler("добавить", add_command))
     application.add_handler(CommandHandler("удалить", remove_command))
 
-    asyncio.create_task(application.run_async())
-    asyncio.create_task(task_monitor_loop(application))
-    asyncio.create_task(daily_report_loop(application))
+    await application.initialize()
+    await application.start()
+
+    asyncio.create_task(task_monitor_loop(application.bot))
+    asyncio.create_task(daily_report_loop(application.bot))
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await application.stop()
+    await application.shutdown()
