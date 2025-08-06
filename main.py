@@ -30,8 +30,11 @@ active = True
 known_tasks = set()
 known_comments = set()
 
-# FastAPI app для Render
 app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"status": "ok"}
 
 def get_projects():
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/projects.json"
