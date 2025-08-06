@@ -27,7 +27,7 @@ known_tasks = set()
 known_comments = set()
 
 app = FastAPI()
-application = None
+application = None  # ← глобальная переменная
 
 @app.get("/")
 def read_root():
