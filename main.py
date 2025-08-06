@@ -47,7 +47,13 @@ def get_todolists(project_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    return requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers)
+    
+    # Добавим отладку
+    print(f"[DEBUG] get_todolists — Status code: {response.status_code}")
+    print(f"[DEBUG] get_todolists — Response: {response.text}")
+
+    return response.json()
 
 def get_todos(project_id, todolist_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todolists/{todolist_id}/todos.json"
