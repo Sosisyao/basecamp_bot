@@ -155,7 +155,11 @@ async def daily_report_loop(bot):
 async def startup_event():
     global application
     logging.basicConfig(level=logging.INFO)
+    
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+    webhook_url = "https://basecamp-bot.onrender.com"
+    await application.bot.set_webhook(url=webhook_url)
 
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("stop", stop_command))
