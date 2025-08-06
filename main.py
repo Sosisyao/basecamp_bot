@@ -157,10 +157,10 @@ async def startup_event():
     logging.basicConfig(level=logging.INFO)
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-    application.add_handler(CommandHandler("старт", start_command))
-    application.add_handler(CommandHandler("стоп", stop_command))
-    application.add_handler(CommandHandler("добавить", add_command))
-    application.add_handler(CommandHandler("удалить", remove_command))
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("stop", stop_command))
+    application.add_handler(CommandHandler("add", add_command))
+    application.add_handler(CommandHandler("remove", remove_command))
 
     await application.initialize()
     await application.start()
@@ -176,29 +176,29 @@ async def shutdown_event():
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global active
     active = True
-    await update.message.reply_text("✅ Мониторинг включён.")
+    await update.message.reply_text("✅ Monitoring is ON.")
 
 async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global active
     active = False
-    await update.message.reply_text("🛑 Мониторинг остановлен.")
+    await update.message.reply_text("🛑 Monitoring is OFF.")
 
 async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) >= 3:
         full_name = f"{context.args[0]} {context.args[1]}"
         mention = context.args[2]
         TEAM[full_name] = mention
-        await update.message.reply_text(f"👤 Участник {full_name} добавлен как {mention}")
+        await update.message.reply_text(f"👤 {full_name} added as {mention}")
     else:
-        await update.message.reply_text("Используй: /добавить Имя Фамилия @ник")
+        await update.message.reply_text("Usage: /add Firstname Lastname @nickname")
 
 async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) >= 2:
         full_name = f"{context.args[0]} {context.args[1]}"
         if full_name in TEAM:
             del TEAM[full_name]
-            await update.message.reply_text(f"🗑 Участник {full_name} удалён.")
+            await update.message.reply_text(f"🗑 {full_name} removed.")
         else:
-            await update.message.reply_text(f"❌ Участник {full_name} не найден.")
+            await update.message.reply_text(f"❌ {full_name} not found.")
     else:
-        await update.message.reply_text("Используй: /удалить Имя Фамилия")
+        await update.message.reply_text("Usage: /remove Firstname Lastname")
