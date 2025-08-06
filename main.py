@@ -27,7 +27,7 @@ known_tasks = set()
 known_comments = set()
 
 app = FastAPI()
-application = None  # ← глобальная переменная
+application = None
 
 @app.get("/")
 def read_root():
@@ -65,10 +65,10 @@ def get_comments(project_id, todo_id):
     }
     return requests.get(url, headers=headers).json()
 
-async def send_message(context: ContextTypes.DEFAULT_TYPE, text):
-    await context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text)
+async def send_message(bot, text):
+    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text)
 
-async def check_updates(context: ContextTypes.DEFAULT_TYPE):
+async def check_updates(bot):
     if not active:
         return
 
@@ -98,7 +98,7 @@ async def check_updates(context: ContextTypes.DEFAULT_TYPE):
                         if name in TEAM:
                             mention = TEAM[name]
                             message = f"{mention}, обрати внимание: новая задача «{todo_title}» (дедлайн: {due_on})\n{todo_url}"
-                            await send_message(context, message)
+                            await send_message(bot, message)
                             known_tasks.add(task_identifier)
 
                 comments = get_comments(project_id, todo_id)
@@ -110,10 +110,10 @@ async def check_updates(context: ContextTypes.DEFAULT_TYPE):
                         for name, mention in TEAM.items():
                             if name in content:
                                 message = f"{mention}, апдейт в задаче «{todo_title}»\n{todo_url}"
-                                await send_message(context, message)
+                                await send_message(bot, message)
                                 known_comments.add(comment_id)
 
-async def daily_report(context: ContextTypes.DEFAULT_TYPE):
+async def daily_report(bot):
     message = "🕚 Ежедневный отчёт\n\n"
     projects = get_projects()
     task_count = {name: 0 for name in TEAM}
@@ -135,21 +135,43 @@ async def daily_report(context: ContextTypes.DEFAULT_TYPE):
         mention = TEAM[name]
         message += f"{mention} — {count} задач(и) сегодня\n"
 
-    await send_message(context, message)
+    await send_message(bot, message)
 
-async def task_monitor_loop(context):
+async def task_monitor_loop(bot):
     while True:
-        await check_updates(context)
+        await check_updates(bot)
         await asyncio.sleep(600)
 
-async def daily_report_loop(context):
+async def daily_report_loop(bot):
     while True:
         now = datetime.datetime.now()
         target = now.replace(hour=11, minute=0, second=0, microsecond=0)
         if now > target:
             target += datetime.timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
-        await daily_report(context)
+        await daily_report(bot)
+
+@app.on_event("startup")
+async def startup_event():
+    global application
+    logging.basicConfig(level=logging.INFO)
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("старт", start_command))
+    application.add_handler(CommandHandler("стоп", stop_command))
+    application.add_handler(CommandHandler("добавить", add_command))
+    application.add_handler(CommandHandler("удалить", remove_command))
+
+    await application.initialize()
+    await application.start()
+
+    asyncio.create_task(task_monitor_loop(application.bot))
+    asyncio.create_task(daily_report_loop(application.bot))
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await application.stop()
+    await application.shutdown()
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global active
@@ -180,25 +202,3 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"❌ Участник {full_name} не найден.")
     else:
         await update.message.reply_text("Используй: /удалить Имя Фамилия")
-
-@app.on_event("startup")
-async def startup_event():
-    global application
-    logging.basicConfig(level=logging.INFO)
-    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-
-    application.add_handler(CommandHandler("старт", start_command))
-    application.add_handler(CommandHandler("стоп", stop_command))
-    application.add_handler(CommandHandler("добавить", add_command))
-    application.add_handler(CommandHandler("удалить", remove_command))
-
-    await application.initialize()
-    await application.start()
-
-    asyncio.create_task(task_monitor_loop(application.bot))
-    asyncio.create_task(daily_report_loop(application.bot))
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await application.stop()
-    await application.shutdown()
