@@ -192,15 +192,18 @@ async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def startup_event():
     logging.basicConfig(level=logging.INFO)
 
-    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    application = (
+        ApplicationBuilder()
+        .token(TELEGRAM_BOT_TOKEN)
+        .build()
+    )
 
     application.add_handler(CommandHandler("старт", start_command))
     application.add_handler(CommandHandler("стоп", stop_command))
     application.add_handler(CommandHandler("добавить", add_command))
     application.add_handler(CommandHandler("удалить", remove_command))
 
-    asyncio.create_task(application.initialize())
-    asyncio.create_task(application.start())
+    asyncio.create_task(application.run_async())
 
     asyncio.create_task(task_monitor_loop(application))
     asyncio.create_task(daily_report_loop(application))
