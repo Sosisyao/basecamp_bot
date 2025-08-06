@@ -203,3 +203,6 @@ async def startup_event():
 
     asyncio.create_task(task_monitor_loop(application))
     asyncio.create_task(daily_report_loop(application))
+
+    await application.updater.start_polling()
+    await application.updater.idle()
