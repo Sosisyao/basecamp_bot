@@ -39,21 +39,34 @@ def get_projects():
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    return requests.get(url, headers=headers).json()
 
+    response = requests.get(url, headers=headers)
+    print(f"[DEBUG] get_projects — Status code: {response.status_code}")
+    print(f"[DEBUG] get_projects — URL: {url}")
+    print(f"[DEBUG] get_projects — Response (first 300): {response.text[:300]}")
+
+    try:
+        return response.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to parse JSON in get_projects: {e}")
+        return []
 def get_todolists(project_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todolists.json"
     headers = {
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    response = requests.get(url, headers=headers)
-    
-    # Добавим отладку
-    print(f"[DEBUG] get_todolists — Status code: {response.status_code}")
-    print(f"[DEBUG] get_todolists — Response: {response.text}")
 
-    return response.json()
+    response = requests.get(url, headers=headers)
+    print(f"[DEBUG] get_todolists — Status code: {response.status_code}")
+    print(f"[DEBUG] get_todolists — URL: {url}")
+    print(f"[DEBUG] get_todolists — Response (first 300): {response.text[:300]}")
+
+    try:
+        return response.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to parse JSON in get_todolists: {e}")
+        return []
 
 def get_todos(project_id, todolist_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todolists/{todolist_id}/todos.json"
@@ -61,7 +74,17 @@ def get_todos(project_id, todolist_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    return requests.get(url, headers=headers).json()
+
+    response = requests.get(url, headers=headers)
+    print(f"[DEBUG] get_todos — Status code: {response.status_code}")
+    print(f"[DEBUG] get_todos — URL: {url}")
+    print(f"[DEBUG] get_todos — Response (first 300): {response.text[:300]}")
+
+    try:
+        return response.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to parse JSON in get_todos: {e}")
+        return []
 
 def get_comments(project_id, todo_id):
     url = f"https://3.basecampapi.com/{BASECAMP_ACCOUNT_ID}/buckets/{project_id}/todos/{todo_id}/comments.json"
@@ -69,7 +92,17 @@ def get_comments(project_id, todo_id):
         "Authorization": f"Bearer {BASECAMP_ACCESS_TOKEN}",
         "User-Agent": "BasecampBot"
     }
-    return requests.get(url, headers=headers).json()
+
+    response = requests.get(url, headers=headers)
+    print(f"[DEBUG] get_comments — Status code: {response.status_code}")
+    print(f"[DEBUG] get_comments — URL: {url}")
+    print(f"[DEBUG] get_comments — Response (first 300): {response.text[:300]}")
+
+    try:
+        return response.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to parse JSON in get_comments: {e}")
+        return []
 
 async def send_message(bot, text):
     await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text)
@@ -87,6 +120,9 @@ async def check_updates(bot):
         project_id = project["id"]
         todolists = get_todolists(project_id)
 
+        if not todolists:
+            continue
+            
         for todolist in todolists:
             todos = get_todos(project_id, todolist["id"])
 
